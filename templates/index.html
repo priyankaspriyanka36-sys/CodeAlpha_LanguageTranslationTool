@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="A Flask-based language translation tool powered by LibreTranslate.">
+    <title>Language Translation Tool</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <main class="app-shell">
+        <header class="hero">
+            <div class="badge">AI Internship Project</div>
+            <h1>Language Translation Tool</h1>
+            <p>Translate text quickly and clearly using a real LibreTranslate API.</p>
+        </header>
+
+        <section class="translator-card" aria-label="Translator">
+            <div id="status" class="status" role="status" aria-live="polite" hidden></div>
+
+            <div class="language-row">
+                <div class="language-field">
+                    <label for="sourceLanguage">From</label>
+                    <select id="sourceLanguage" aria-label="Source language">
+                        <option value="auto">Auto Detect</option>
+                    </select>
+                </div>
+
+                <button id="swapButton" class="icon-button" type="button" title="Swap languages" aria-label="Swap languages">⇄</button>
+
+                <div class="language-field">
+                    <label for="targetLanguage">To</label>
+                    <select id="targetLanguage" aria-label="Target language"></select>
+                </div>
+            </div>
+
+            <div class="panels">
+                <div class="panel">
+                    <div class="panel-heading">
+                        <label for="inputText">Enter text</label>
+                        <span id="characterCount">0 / 5000</span>
+                    </div>
+                    <textarea id="inputText" maxlength="5000" placeholder="Type or paste text here..."></textarea>
+                    <button id="clearButton" class="text-button" type="button">Clear</button>
+                </div>
+
+                <div class="panel output-panel">
+                    <div class="panel-heading">
+                        <span>Translation</span>
+                        <span id="detectedLanguage" class="detected">Detected: —</span>
+                    </div>
+                    <div id="outputText" class="output-text" aria-live="polite">Your translation will appear here.</div>
+                    <div class="output-actions">
+                        <button id="copyButton" class="secondary-button" type="button" disabled>Copy</button>
+                        <button id="listenButton" class="secondary-button" type="button" disabled>Listen</button>
+                    </div>
+                </div>
+            </div>
+
+            <button id="translateButton" class="primary-button" type="button">
+                <span id="spinner" class="spinner" hidden></span>
+                <span id="translateLabel">Translate</span>
+            </button>
+        </section>
+
+        <footer>
+            <p>Powered by Flask + LibreTranslate · Maximum input: 5000 characters</p>
+        </footer>
+    </main>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
