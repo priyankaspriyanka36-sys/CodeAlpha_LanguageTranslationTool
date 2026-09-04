@@ -3,35 +3,47 @@ import requests
 
 app = Flask(__name__)
 
-# MyMemory is a free translation API and does not require a Google API key.
-TRANSLATION_API_URL = "https://api.mymemory.translated.net/get"
+MYMEMORY_URL = "https://api.mymemory.translated.net/get"
 
 MAX_TEXT_LENGTH = 5000
 
-
-# Supported languages
 LANGUAGES = [
-    {"code": "en", "name": "English"},
-    {"code": "hi", "name": "Hindi"},
-    {"code": "kn", "name": "Kannada"},
-    {"code": "ta", "name": "Tamil"},
-    {"code": "te", "name": "Telugu"},
-    {"code": "ml", "name": "Malayalam"},
-    {"code": "mr", "name": "Marathi"},
-    {"code": "bn", "name": "Bengali"},
-    {"code": "gu", "name": "Gujarati"},
-    {"code": "pa", "name": "Punjabi"},
-    {"code": "ur", "name": "Urdu"},
-    {"code": "fr", "name": "French"},
-    {"code": "de", "name": "German"},
-    {"code": "es", "name": "Spanish"},
-    {"code": "it", "name": "Italian"},
-    {"code": "pt", "name": "Portuguese"},
-    {"code": "ru", "name": "Russian"},
-    {"code": "ja", "name": "Japanese"},
-    {"code": "ko", "name": "Korean"},
-    {"code": "zh-CN", "name": "Chinese"},
-    {"code": "ar", "name": "Arabic"},
+    ("auto", "Auto Detect"),
+    ("en", "English"),
+    ("hi", "Hindi"),
+    ("kn", "Kannada"),
+    ("ta", "Tamil"),
+    ("te", "Telugu"),
+    ("ml", "Malayalam"),
+    ("bn", "Bengali"),
+    ("mr", "Marathi"),
+    ("gu", "Gujarati"),
+    ("pa", "Punjabi"),
+    ("ur", "Urdu"),
+    ("fr", "French"),
+    ("de", "German"),
+    ("es", "Spanish"),
+    ("it", "Italian"),
+    ("pt", "Portuguese"),
+    ("ru", "Russian"),
+    ("ja", "Japanese"),
+    ("ko", "Korean"),
+    ("zh", "Chinese"),
+    ("ar", "Arabic"),
+    ("nl", "Dutch"),
+    ("pl", "Polish"),
+    ("tr", "Turkish"),
+    ("vi", "Vietnamese"),
+    ("th", "Thai"),
+    ("id", "Indonesian"),
+    ("uk", "Ukrainian"),
+    ("ro", "Romanian"),
+    ("cs", "Czech"),
+    ("sv", "Swedish"),
+    ("da", "Danish"),
+    ("fi", "Finnish"),
+    ("no", "Norwegian"),
+    ("he", "Hebrew"),
 ]
 
 
@@ -40,99 +52,87 @@ def home():
     return render_template("index.html")
 
 
-@app.route("/languages", methods=["GET"])
+@app.route("/languages")
 def languages():
-    """Return the list of supported languages."""
-    return jsonify({
-        "success": True,
-        "languages": LANGUAGES
-    })
+    return jsonify([
+        {"code": code, "name": name}
+        for code, name in LANGUAGES
+    ])
 
 
 @app.route("/translate", methods=["POST"])
 def translate():
-    """Translate text using the MyMemory API."""
-
     try:
-        data = request.get_json(silent=True)
+        data = request.get_json()
 
-        if not data:
-            return jsonify({
-                "success": False,
-                "error": "Invalid request."
-            }), 400
+        text = (data.get("text") or "").strip()
+        source = data.get("source", "auto")
+        target = data.get("target", "en")
 
-        text = str(data.get("text", "")).strip()
-        source = str(data.get("source", "en")).strip()
-        target = str(data.get("target", "en")).strip()
-
-        # Validate text
         if not text:
             return jsonify({
                 "success": False,
-                "error": "Please enter some text to translate."
+                "error": "Please enter some text."
             }), 400
 
         if len(text) > MAX_TEXT_LENGTH:
             return jsonify({
                 "success": False,
-                "error": f"Text cannot exceed {MAX_TEXT_LENGTH} characters."
+                "error": f"Text is too long. Maximum {MAX_TEXT_LENGTH} characters."
             }), 400
 
-        # Validate target language
-        valid_codes = [language["code"] for language in LANGUAGES]
-
-        if target not in valid_codes:
-            return jsonify({
-                "success": False,
-                "error": "Invalid target language."
-            }), 400
-
-        # Auto-detect source language
         if source == "auto":
             source = "en"
 
-        if source not in valid_codes:
-            return jsonify({
-                "success": False,
-                "error": "Invalid source language."
-            }), 400
+        # MyMemory uses language-region codes for some languages.
+        language_map = {
+            "kn": "kn-IN",
+            "ta": "ta-LK",
+            "te": "te-IN",
+            "ml": "ml-IN",
+            "hi": "hi-IN",
+            "bn": "bn-IN",
+            "mr": "mr-IN",
+            "gu": "gu-IN",
+            "pa": "pa-IN",
+            "ur": "ur-PK",
+        }
 
-        # Same language
-        if source == target:
-            return jsonify({
-                "success": True,
-                "translation": text,
-                "detected_source_language": source
-            })
-
-        # MyMemory language pair format
-        language_pair = f"{source}|{target}"
+        source_code = language_map.get(source, source)
+        target_code = language_map.get(target, target)
 
         params = {
             "q": text,
-            "langpair": language_pair
+            "langpair": f"{source_code}|{target_code}"
         }
 
         response = requests.get(
-            TRANSLATION_API_URL,
+            MYMEMORY_URL,
             params=params,
-            timeout=20
+            timeout=30
         )
 
         response.raise_for_status()
-
         result = response.json()
 
-        # Check MyMemory response
-        response_data = result.get("responseData", {})
-        translated_text = response_data.get("translatedText")
+        if result.get("responseStatus") != 200:
+            return jsonify({
+                "success": False,
+                "error": result.get(
+                    "responseDetails",
+                    "Translation service returned an error."
+                )
+            }), 500
+
+        translated_text = result.get("responseData", {}).get(
+            "translatedText"
+        )
 
         if not translated_text:
             return jsonify({
                 "success": False,
-                "error": "Translation service returned no translation."
-            }), 502
+                "error": "No translation was returned."
+            }), 500
 
         return jsonify({
             "success": True,
@@ -143,35 +143,29 @@ def translate():
     except requests.exceptions.Timeout:
         return jsonify({
             "success": False,
-            "error": "Translation request timed out. Please try again."
+            "error": "Translation service timed out. Please try again."
         }), 504
 
-    except requests.exceptions.ConnectionError:
+    except requests.exceptions.RequestException as e:
         return jsonify({
             "success": False,
-            "error": "Could not connect to the translation service. Check your internet connection."
-        }), 503
-
-    except requests.exceptions.RequestException:
-        return jsonify({
-            "success": False,
-            "error": "Translation service is currently unavailable."
+            "error": f"Translation service error: {str(e)}"
         }), 502
 
-    except Exception as error:
-        print("Unexpected error:", error)
-
+    except Exception as e:
         return jsonify({
             "success": False,
-            "error": "An unexpected error occurred."
+            "error": f"Unexpected error: {str(e)}"
         }), 500
 
 
 if __name__ == "__main__":
-    print("=" * 50)
+    print("=" * 60)
     print("Language Translation Tool")
-    print("Server: http://127.0.0.1:5000")
-    print("=" * 50)
+    print("=" * 60)
+    print("Flask Server : http://127.0.0.1:5000")
+    print("Translation  : MyMemory API")
+    print("=" * 60)
 
     app.run(
         host="127.0.0.1",
