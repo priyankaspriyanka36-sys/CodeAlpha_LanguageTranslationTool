@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="A Flask-based language translation tool powered by LibreTranslate.">
+    <meta name="description" content="A Flask-based language translation tool powered by the MyMemory Translation API.">
     <title>Language Translation Tool</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
@@ -12,7 +12,7 @@
         <header class="hero">
             <div class="badge">AI Internship Project</div>
             <h1>Language Translation Tool</h1>
-            <p>Translate text quickly and clearly using a real LibreTranslate API.</p>
+            <p>Translate text quickly and clearly using the MyMemory Translation API.</p>
         </header>
 
         <section class="translator-card" aria-label="Translator">
@@ -64,7 +64,7 @@
         </section>
 
         <footer>
-            <p>Powered by Flask + LibreTranslate · Maximum input: 5000 characters</p>
+            <p>Powered by Flask + MyMemory API · Maximum input: 5000 characters</p>
         </footer>
     </main>
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
